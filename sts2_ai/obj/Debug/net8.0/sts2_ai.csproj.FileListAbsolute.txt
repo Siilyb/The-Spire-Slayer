@@ -1,0 +1,11 @@
+C:\Users\GoodName\The Spire Slayer\sts2_ai\bin\Debug\net8.0\sts2_ai.deps.json
+C:\Users\GoodName\The Spire Slayer\sts2_ai\bin\Debug\net8.0\sts2_ai.dll
+C:\Users\GoodName\The Spire Slayer\sts2_ai\bin\Debug\net8.0\sts2_ai.pdb
+C:\Users\GoodName\The Spire Slayer\sts2_ai\obj\Debug\net8.0\sts2_ai.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\GoodName\The Spire Slayer\sts2_ai\obj\Debug\net8.0\sts2_ai.AssemblyInfoInputs.cache
+C:\Users\GoodName\The Spire Slayer\sts2_ai\obj\Debug\net8.0\sts2_ai.AssemblyInfo.cs
+C:\Users\GoodName\The Spire Slayer\sts2_ai\obj\Debug\net8.0\sts2_ai.csproj.CoreCompileInputs.cache
+C:\Users\GoodName\The Spire Slayer\sts2_ai\obj\Debug\net8.0\sts2_ai.dll
+C:\Users\GoodName\The Spire Slayer\sts2_ai\obj\Debug\net8.0\refint\sts2_ai.dll
+C:\Users\GoodName\The Spire Slayer\sts2_ai\obj\Debug\net8.0\sts2_ai.pdb
+C:\Users\GoodName\The Spire Slayer\sts2_ai\obj\Debug\net8.0\ref\sts2_ai.dll

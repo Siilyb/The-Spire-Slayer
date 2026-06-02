@@ -1,0 +1,12 @@
+{
+  "version": 2,
+  "dgSpecHash": "f3tzKQwn+Io=",
+  "success": true,
+  "projectFilePath": "C:\\Users\\GoodName\\The Spire Slayer\\sts2_ai\\sts2_ai.csproj",
+  "expectedPackageFiles": [
+    "C:\\Users\\GoodName\\.nuget\\packages\\microsoft.netcore.app.ref\\8.0.26\\microsoft.netcore.app.ref.8.0.26.nupkg.sha512",
+    "C:\\Users\\GoodName\\.nuget\\packages\\microsoft.windowsdesktop.app.ref\\8.0.26\\microsoft.windowsdesktop.app.ref.8.0.26.nupkg.sha512",
+    "C:\\Users\\GoodName\\.nuget\\packages\\microsoft.aspnetcore.app.ref\\8.0.26\\microsoft.aspnetcore.app.ref.8.0.26.nupkg.sha512"
+  ],
+  "logs": []
+}
