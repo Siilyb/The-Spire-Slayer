@@ -98,3 +98,4 @@ C:\Users\GoodName\The Spire Slayer\sts2_ai_tests\obj\Debug\net8.0\refint\sts2_ai
 C:\Users\GoodName\The Spire Slayer\sts2_ai_tests\obj\Debug\net8.0\sts2_ai_tests.pdb
 C:\Users\GoodName\The Spire Slayer\sts2_ai_tests\obj\Debug\net8.0\sts2_ai_tests.genruntimeconfig.cache
 C:\Users\GoodName\The Spire Slayer\sts2_ai_tests\obj\Debug\net8.0\ref\sts2_ai_tests.dll
+C:\Users\GoodName\The Spire Slayer\sts2_ai_tests\obj\Debug\net8.0\sts2_ai_tests.sourcelink.json

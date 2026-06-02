@@ -9,3 +9,4 @@ C:\Users\GoodName\The Spire Slayer\sts2_ai\obj\Debug\net8.0\sts2_ai.dll
 C:\Users\GoodName\The Spire Slayer\sts2_ai\obj\Debug\net8.0\refint\sts2_ai.dll
 C:\Users\GoodName\The Spire Slayer\sts2_ai\obj\Debug\net8.0\sts2_ai.pdb
 C:\Users\GoodName\The Spire Slayer\sts2_ai\obj\Debug\net8.0\ref\sts2_ai.dll
+C:\Users\GoodName\The Spire Slayer\sts2_ai\obj\Debug\net8.0\sts2_ai.sourcelink.json

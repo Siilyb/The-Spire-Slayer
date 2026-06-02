@@ -1,6 +1,7 @@
 using Sts2Ai.CombatSimulator.Effects;
 using Sts2Ai.CombatSimulator.Powers;
 using Sts2Ai.CombatSimulator.State;
+using Sts2Ai.Enemies;
 
 namespace Sts2Ai.CombatSimulator;
 
@@ -15,6 +16,11 @@ public class SimEngine
     public ICombatDecisionMaker? PlayerAi { get; set; }
     public SimCard? CurrentPlayingCard { get; set; }
 
+    // Per-turn tracking
+    public int CardsExhaustedThisTurn { get; set; }
+    public int UnblockedDamageReceivedThisTurn { get; set; }
+    public bool LostHpThisTurn { get; set; }
+
     public SimEngine(SimState state, ICombatDecisionMaker? playerAi = null)
     {
         State = state;
@@ -23,6 +29,12 @@ public class SimEngine
 
     public CombatResult RunFullCombat(int maxTurns = 100)
     {
+        foreach (var enemy in State.Enemies)
+        {
+            var ai = EnemyDb.Get(enemy.Name.ToUpperInvariant());
+            ai?.OnCombatStart(enemy);
+        }
+
         for (int turn = 0; turn < maxTurns; turn++)
         {
             State.TurnNumber++;
@@ -73,6 +85,9 @@ public class SimEngine
 
     private void BeginPlayerTurn()
     {
+        CardsExhaustedThisTurn = 0;
+        UnblockedDamageReceivedThisTurn = 0;
+        LostHpThisTurn = false;
         State.Energy = State.MaxEnergy;
         var participants = State.Players.Where(p => p.IsAlive).ToList() as IReadOnlyList<SimCreature>;
         foreach (var player in State.Players.Where(p => p.IsAlive))
@@ -128,6 +143,12 @@ public class SimEngine
     public void PlayCard(SimCard card)
     {
         if (!State.Hand.Cards.Contains(card)) return;
+        ExecuteCard(card);
+    }
+
+    /// Play a card that may not be in hand (for HowlFromBeyond auto-replay)
+    public void ExecuteCard(SimCard card)
+    {
         if (card.HasKeyword("Unplayable")) return;
 
         int modifiedCost = ApplyCardCostHooks(card.CurrentCost, card);
@@ -192,8 +213,25 @@ public class SimEngine
         if (shouldExhaust)
         {
             State.ExhaustPile.Add(card);
+            CardsExhaustedThisTurn++;
+
+            // DrumOfBattle: gain energy when exhausted
+            if (card.Id == "DRUM_OF_BATTLE")
+            {
+                int energyAmt = card.IsUpgraded ? 3 : 2;
+                State.Energy += energyAmt;
+            }
+
             foreach (var power in State.Players.SelectMany(p => p.Powers))
                 power.AfterCardExhausted(State.Players[0], card);
+
+            // HowlFromBeyond: auto-replay from exhaust pile
+            bool isHowl = card.CurrentEffects.Any(e => e is Effects.HowlFromBeyondEffect);
+            if (isHowl && !State.IsCombatOver)
+            {
+                State.ExhaustPile.Remove(card);
+                ExecuteCard(card);
+            }
         }
         else
         {
@@ -243,9 +281,55 @@ public class SimEngine
         var player = State.Players.FirstOrDefault(p => p.IsAlive);
         if (player == null) return;
 
-        int damage = 8;
-        damage = (int)CalculateDamage(enemy, player, damage, 1, ValueProp.Move, null);
-        player.LoseHp(damage);
+        var ai = EnemyDb.Get(enemy.Name.ToUpperInvariant());
+        if (ai == null) return;
+
+        var plan = ai.PlanNextTurn(State, enemy);
+
+        if (plan.Intent == IntentType.Attack || plan.Intent == IntentType.DeathBlow)
+        {
+            for (int i = 0; i < plan.Hits; i++)
+            {
+                decimal dmg = CalculateDamage(enemy, player, plan.Damage, 1, plan.DamageProps, null);
+                player.LoseHp(dmg);
+                if (!player.IsAlive) break;
+            }
+        }
+
+        if (plan.Block > 0)
+            enemy.GainBlock(plan.Block);
+
+        if (plan.BuffAmount > 0)
+        {
+            var strPower = enemy.GetPower<StrengthPower>();
+            if (strPower != null)
+                strPower.Amount += plan.BuffAmount;
+            else
+                enemy.ApplyPower(new StrengthPower { Amount = plan.BuffAmount });
+        }
+
+        if (plan.DebuffAmount > 0 && player.IsAlive)
+        {
+            player.ApplyPower(new VulnerablePower { Amount = plan.DebuffAmount });
+        }
+
+        if (plan.StatusCardCount > 0 && !string.IsNullOrEmpty(plan.StatusCardId))
+        {
+            for (int i = 0; i < plan.StatusCardCount; i++)
+            {
+                var statusCard = new SimCard
+                {
+                    Id = plan.StatusCardId,
+                    Name = plan.StatusCardId,
+                    Cost = -1,
+                    Type = CardType.Status,
+                    Rarity = CardRarity.Status,
+                    DefaultTargetType = TargetType.None,
+                    Keywords = new HashSet<string> { "Unplayable" }
+                };
+                State.DiscardPile.Add(statusCard);
+            }
+        }
     }
 
     private void EndEnemyTurn()
@@ -313,6 +397,11 @@ public class SimEngine
 
         if (damage > 0)
         {
+            if (target.Side == CombatSide.Player)
+            {
+                LostHpThisTurn = true;
+                UnblockedDamageReceivedThisTurn++;
+            }
             foreach (var power in target.Powers.ToList())
                 damage = power.ModifyHpLostAfterOsty(target, damage, props, source, card);
             foreach (var power in target.Powers.ToList())

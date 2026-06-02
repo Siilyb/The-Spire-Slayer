@@ -141,7 +141,7 @@ public static partial class IroncladCards
                 new SelfDamage { Amount = 1 },
                 new GainBlock { BaseAmount = 0, Props = ValueProp.Move, CalculatedBlock = (e, s) => s.Block }
             },
-            UpgradedKeywords = new HashSet<string>() // remove Exhaust on upgrade
+            UpgradedKeywordsOverrides = true
         };
     }
 
@@ -212,11 +212,11 @@ public static partial class IroncladCards
             Type = CardType.Skill, Rarity = CardRarity.Uncommon, DefaultTargetType = TargetType.Self,
             Effects = new List<IEffect>
             {
-                new GainBlock { BaseAmount = 8, Props = ValueProp.Move }
+                new EvilEyeEffect { BaseBlock = 8 }
             },
             UpgradedEffects = new List<IEffect>
             {
-                new GainBlock { BaseAmount = 11, Props = ValueProp.Move }
+                new EvilEyeEffect { BaseBlock = 11 }
             }
         };
     }
@@ -285,11 +285,11 @@ public static partial class IroncladCards
             Keywords = new HashSet<string> { "Exhaust" },
             Effects = new List<IEffect>
             {
-                new ConditionalGainEnergy { Amount = 3, Condition = (e) => e.State.ExhaustPile.Count > 0 }
+                new ConditionalGainEnergy { Amount = 3, Condition = (e) => e.CardsExhaustedThisTurn > 0 }
             },
             UpgradedEffects = new List<IEffect>
             {
-                new ConditionalGainEnergy { Amount = 4, Condition = (e) => e.State.ExhaustPile.Count > 0 }
+                new ConditionalGainEnergy { Amount = 4, Condition = (e) => e.CardsExhaustedThisTurn > 0 }
             }
         };
     }
@@ -322,11 +322,13 @@ public static partial class IroncladCards
             Keywords = new HashSet<string> { "Exhaust" },
             Effects = new List<IEffect>
             {
-                new DealDamage { BaseAmount = 16, Props = ValueProp.Move }
+                new DealDamage { BaseAmount = 16, Props = ValueProp.Move },
+                new HowlFromBeyondEffect()
             },
             UpgradedEffects = new List<IEffect>
             {
-                new DealDamage { BaseAmount = 21, Props = ValueProp.Move }
+                new DealDamage { BaseAmount = 21, Props = ValueProp.Move },
+                new HowlFromBeyondEffect()
             }
         };
     }
@@ -504,8 +506,8 @@ public static partial class IroncladCards
             }
         };
     }
-    private static int SpiteHitCount(SimEngine e, SimCreature t) => 1;
-    private static int SpiteHitCountUpgraded(SimEngine e, SimCreature t) => 1;
+    private static int SpiteHitCount(SimEngine e, SimCreature t) => e.LostHpThisTurn ? 2 : 1;
+    private static int SpiteHitCountUpgraded(SimEngine e, SimCreature t) => e.LostHpThisTurn ? 3 : 1;
 
     public static SimCard Stampede()
     {
@@ -803,11 +805,11 @@ public static partial class IroncladCards
             Keywords = new HashSet<string> { "Exhaust" },
             Effects = new List<IEffect>
             {
-                new DealDamage { BaseAmount = 10, Props = ValueProp.Move }
+                new FeedEffect { DamageAmount = 10, MaxHpGain = 3 }
             },
             UpgradedEffects = new List<IEffect>
             {
-                new DealDamage { BaseAmount = 12, Props = ValueProp.Move }
+                new FeedEffect { DamageAmount = 12, MaxHpGain = 4 }
             }
         };
     }
@@ -950,7 +952,7 @@ public static partial class IroncladCards
         {
             Id = "PRIMAL_FORCE", Name = "Primal Force", Cost = 0,
             Type = CardType.Skill, Rarity = CardRarity.Rare, DefaultTargetType = TargetType.Self,
-            Effects = new List<IEffect> { /* Transform attacks to GiantRock - complex */ }
+            Effects = new List<IEffect> { new PrimalForceEffect() }
         };
     }
 
@@ -977,14 +979,8 @@ public static partial class IroncladCards
         {
             Id = "STOKE", Name = "Stoke", Cost = 1,
             Type = CardType.Skill, Rarity = CardRarity.Rare, DefaultTargetType = TargetType.Self,
-            Effects = new List<IEffect>
-            {
-                new ExhaustFromHand { Amount = 0 }
-            },
-            UpgradedEffects = new List<IEffect>
-            {
-                new ExhaustFromHand { Amount = 0 }
-            }
+            Effects = new List<IEffect> { new StokeEffect() },
+            UpgradedEffects = new List<IEffect> { new StokeEffect() }
         };
     }
 
@@ -1013,14 +1009,15 @@ public static partial class IroncladCards
             Type = CardType.Attack, Rarity = CardRarity.Rare, DefaultTargetType = TargetType.SingleEnemy,
             Effects = new List<IEffect>
             {
-                new DealDamage { BaseAmount = 5, Props = ValueProp.Move, HitCount = 1 }
+                new DealDamage { BaseAmount = 5, Props = ValueProp.Move, HitCountFunc = TearAsunderHitCount }
             },
             UpgradedEffects = new List<IEffect>
             {
-                new DealDamage { BaseAmount = 7, Props = ValueProp.Move, HitCount = 1 }
+                new DealDamage { BaseAmount = 7, Props = ValueProp.Move, HitCountFunc = TearAsunderHitCount }
             }
         };
     }
+    private static int TearAsunderHitCount(SimEngine e, SimCreature t) => 1 + e.UnblockedDamageReceivedThisTurn;
 
     public static SimCard Thrash()
     {
@@ -1029,14 +1026,8 @@ public static partial class IroncladCards
             Id = "THRASH", Name = "Thrash", Cost = 1,
             Type = CardType.Attack, Rarity = CardRarity.Rare, DefaultTargetType = TargetType.SingleEnemy,
             Keywords = new HashSet<string> { "Exhaust" },
-            Effects = new List<IEffect>
-            {
-                new DealDamage { BaseAmount = 4, Props = ValueProp.Move, HitCount = 2 }
-            },
-            UpgradedEffects = new List<IEffect>
-            {
-                new DealDamage { BaseAmount = 6, Props = ValueProp.Move, HitCount = 2 }
-            }
+            Effects = new List<IEffect> { new ThrashEffect { BaseDamage = 4 } },
+            UpgradedEffects = new List<IEffect> { new ThrashEffect { BaseDamage = 6 } }
         };
     }
 

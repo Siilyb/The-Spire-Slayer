@@ -1,5 +1,11 @@
 using Sts2Ai.CombatSimulator.State;
 using Sts2Ai.Cards.Ironclad;
+using Sts2Ai.Cards.Colorless;
+using Sts2Ai.Cards.Curse;
+using Sts2Ai.Cards.Status;
+using Sts2Ai.Cards.Event;
+using Sts2Ai.Cards.Token;
+using Sts2Ai.Cards.Quest;
 
 namespace Sts2Ai.Cards;
 
@@ -103,6 +109,155 @@ public static class CardRegistry
         // Ancient
         Register(IroncladCards.Break, "BREAK");
         Register(IroncladCards.Corruption, "CORRUPTION");
+
+        // === Colorless ===
+        Register(ColorlessCards.UltimateStrike, "ULTIMATE_STRIKE");
+        Register(ColorlessCards.UltimateDefend, "ULTIMATE_DEFEND");
+        Register(ColorlessCards.Finesse, "FINESSE");
+        Register(ColorlessCards.FlashOfSteel, "FLASH_OF_STEEL");
+        Register(ColorlessCards.MasterOfStrategy, "MASTER_OF_STRATEGY");
+        Register(ColorlessCards.Production, "PRODUCTION");
+        Register(ColorlessCards.Impatience, "IMPATIENCE");
+        Register(ColorlessCards.PanicButton, "PANIC_BUTTON");
+        Register(ColorlessCards.Prowess, "PROWESS");
+        Register(ColorlessCards.Equilibrium, "EQUILIBRIUM");
+        Register(ColorlessCards.EternalArmor, "ETERNAL_ARMOR");
+        Register(ColorlessCards.Automation, "AUTOMATION");
+        Register(ColorlessCards.Mayhem, "MAYHEM");
+        Register(ColorlessCards.Nostalgia, "NOSTALGIA");
+        Register(ColorlessCards.Stratagem, "STRATAGEM");
+        Register(ColorlessCards.Panache, "PANACHE");
+        Register(ColorlessCards.PrepTime, "PREP_TIME");
+        Register(ColorlessCards.Fasten, "FASTEN");
+        Register(ColorlessCards.RollingBoulder, "ROLLING_BOULDER");
+        Register(ColorlessCards.Calamity, "CALAMITY");
+        Register(ColorlessCards.Entropy, "ENTROPY");
+        Register(ColorlessCards.MindBlast, "MIND_BLAST");
+        Register(ColorlessCards.GoldAxe, "GOLD_AXE");
+        Register(ColorlessCards.Omnislice, "OMNISLICE");
+        Register(ColorlessCards.DramaticEntrance, "DRAMATIC_ENTRANCE");
+        Register(ColorlessCards.Fisticuffs, "FISTICUFFS");
+        Register(ColorlessCards.SeekerStrike, "SEEKER_STRIKE");
+        Register(ColorlessCards.Rend, "REND");
+        Register(ColorlessCards.Salvo, "SALVO");
+        Register(ColorlessCards.TheGambit, "THE_GAMBIT");
+        Register(ColorlessCards.Prolong, "PROLONG");
+        Register(ColorlessCards.ThinkingAhead, "THINKING_AHEAD");
+        Register(ColorlessCards.Scrawl, "SCRAWL");
+        Register(ColorlessCards.Restlessness, "RESTLESSNESS");
+        Register(ColorlessCards.Purity, "PURITY");
+        Register(ColorlessCards.Bolas, "BOLAS");
+        Register(ColorlessCards.ThrummingHatchet, "THRUMMING_HATCHET");
+        Register(ColorlessCards.Volley, "VOLLEY");
+        Register(ColorlessCards.Lift, "LIFT");
+        Register(ColorlessCards.Intercept, "INTERCEPT");
+        Register(ColorlessCards.Rally, "RALLY");
+        Register(ColorlessCards.BelieveInYou, "BELIEVE_IN_YOU");
+        Register(ColorlessCards.Coordinate, "COORDINATE");
+        Register(ColorlessCards.TagTeam, "TAG_TEAM");
+        Register(ColorlessCards.Knockdown, "KNOCKDOWN");
+        Register(ColorlessCards.GangUp, "GANG_UP");
+        Register(ColorlessCards.HuddleUp, "HUDDLE_UP");
+        Register(ColorlessCards.BeaconOfHope, "BEACON_OF_HOPE");
+        Register(ColorlessCards.JackOfAllTrades, "JACK_OF_ALL_TRADES");
+        Register(ColorlessCards.Discovery, "DISCOVERY");
+        Register(ColorlessCards.Splash, "SPLASH");
+        Register(ColorlessCards.Jackpot, "JACKPOT");
+        Register(ColorlessCards.Alchemize, "ALCHEMIZE");
+        Register(ColorlessCards.Anointed, "ANOINTED");
+        Register(ColorlessCards.SecretTechnique, "SECRET_TECHNIQUE");
+        Register(ColorlessCards.SecretWeapon, "SECRET_WEAPON");
+        Register(ColorlessCards.DarkShackles, "DARK_SHACKLES");
+        Register(ColorlessCards.HandOfGreed, "HAND_OF_GREED");
+        Register(ColorlessCards.HiddenGem, "HIDDEN_GEM");
+        Register(ColorlessCards.Mimic, "MIMIC");
+        Register(ColorlessCards.BeatDown, "BEAT_DOWN");
+        Register(ColorlessCards.Catastrophe, "CATASTROPHE");
+        Register(ColorlessCards.TheBomb, "THE_BOMB");
+
+        // === Curse (18) ===
+        Register(CurseCards.AscendersBane, "ASCENDERS_BANE");
+        Register(CurseCards.BadLuck, "BAD_LUCK");
+        Register(CurseCards.Clumsy, "CLUMSY");
+        Register(CurseCards.CurseOfTheBell, "CURSE_OF_THE_BELL");
+        Register(CurseCards.Debt, "DEBT");
+        Register(CurseCards.Decay, "DECAY");
+        Register(CurseCards.Doubt, "DOUBT");
+        Register(CurseCards.Enthralled, "ENTHRALLED");
+        Register(CurseCards.Folly, "FOLLY");
+        Register(CurseCards.Greed, "GREED");
+        Register(CurseCards.Guilty, "GUILTY");
+        Register(CurseCards.Injury, "INJURY");
+        Register(CurseCards.Normality, "NORMALITY");
+        Register(CurseCards.PoorSleep, "POOR_SLEEP");
+        Register(CurseCards.Regret, "REGRET");
+        Register(CurseCards.Shame, "SHAME");
+        Register(CurseCards.SporeMind, "SPORE_MIND");
+        Register(CurseCards.Writhe, "WRITHE");
+
+        // === Status (12) ===
+        Register(StatusCards.Beckon, "BECKON");
+        Register(StatusCards.Burn, "BURN");
+        Register(StatusCards.Dazed, "DAZED");
+        Register(StatusCards.Debris, "DEBRIS");
+        Register(StatusCards.FranticEscape, "FRANTIC_ESCAPE");
+        Register(StatusCards.Infection, "INFECTION");
+        Register(StatusCards.Wither, "WITHER");
+        Register(StatusCards.Slimed, "SLIMED");
+        Register(StatusCards.Soot, "SOOT");
+        Register(StatusCards.Toxic, "TOXIC");
+        Register(StatusCards.Void, "VOID");
+        Register(StatusCards.Wound, "WOUND");
+
+        // === Event (27) ===
+        Register(EventCards.Apotheosis, "APOTHEOSIS");
+        Register(EventCards.Apparition, "APPARITION");
+        Register(EventCards.BrightestFlame, "BRIGHTEST_FLAME");
+        Register(EventCards.ByrdSwoop, "BYRD_SWOOP");
+        Register(EventCards.Caltrops, "CALTROPS");
+        Register(EventCards.Clash, "CLASH");
+        Register(EventCards.Distraction, "DISTRACTION");
+        Register(EventCards.DualWield, "DUAL_WIELD");
+        Register(EventCards.Enlightenment, "ENLIGHTENMENT");
+        Register(EventCards.Entrench, "ENTRENCH");
+        Register(EventCards.Exterminate, "EXTERMINATE");
+        Register(EventCards.FeedingFrenzy, "FEEDING_FRENZY");
+        Register(EventCards.HelloWorld, "HELLO_WORLD");
+        Register(EventCards.MadScience, "MAD_SCIENCE");
+        Register(EventCards.Maul, "MAUL");
+        Register(EventCards.Metamorphosis, "METAMORPHOSIS");
+        Register(EventCards.NeowsFury, "NEOWS_FURY");
+        Register(EventCards.Outmaneuver, "OUTMANEUVER");
+        Register(EventCards.Peck, "PECK");
+        Register(EventCards.Rebound, "REBOUND");
+        Register(EventCards.Relax, "RELAX");
+        Register(EventCards.RipAndTear, "RIP_AND_TEAR");
+        Register(EventCards.Squash, "SQUASH");
+        Register(EventCards.Stack, "STACK");
+        Register(EventCards.ToricToughness, "TORIC_TOUGHNESS");
+        Register(EventCards.Wish, "WISH");
+        Register(EventCards.Whistle, "WHISTLE");
+
+        // === Token (14) ===
+        Register(TokenCards.Disintegration, "DISINTEGRATION");
+        Register(TokenCards.Fuel, "FUEL");
+        Register(TokenCards.GiantRock, "GIANT_ROCK");
+        Register(TokenCards.Luminesce, "LUMINESCE");
+        Register(TokenCards.MindRot, "MIND_ROT");
+        Register(TokenCards.MinionDiveBomb, "MINION_DIVE_BOMB");
+        Register(TokenCards.MinionSacrifice, "MINION_SACRIFICE");
+        Register(TokenCards.MinionStrike, "MINION_STRIKE");
+        Register(TokenCards.Shiv, "SHIV");
+        Register(TokenCards.Sloth, "SLOTH");
+        Register(TokenCards.Soul, "SOUL");
+        Register(TokenCards.SovereignBlade, "SOVEREIGN_BLADE");
+        Register(TokenCards.SweepingGaze, "SWEEPING_GAZE");
+        Register(TokenCards.WasteAway, "WASTE_AWAY");
+
+        // === Quest (3) ===
+        Register(QuestCards.ByrdonisEgg, "BYRDONIS_EGG");
+        Register(QuestCards.LanternKey, "LANTERN_KEY");
+        Register(QuestCards.SpoilsMap, "SPOILS_MAP");
     }
 
     private static void Register(Func<SimCard> factory, string id) => All[id] = factory;

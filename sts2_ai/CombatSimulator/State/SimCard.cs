@@ -23,7 +23,8 @@ public class SimCard
 
     public int CurrentCost => IsUpgraded && UpgradedCost >= 0 ? UpgradedCost : Cost;
     public List<IEffect> CurrentEffects => IsUpgraded && UpgradedEffects.Count > 0 ? UpgradedEffects : Effects;
-    public HashSet<string> CurrentKeywords => IsUpgraded && UpgradedKeywords.Count > 0 ? UpgradedKeywords : Keywords;
+    public bool UpgradedKeywordsOverrides { get; set; }
+    public HashSet<string> CurrentKeywords => IsUpgraded && UpgradedKeywordsOverrides ? UpgradedKeywords : Keywords;
 
     public bool HasKeyword(string keyword) => CurrentKeywords.Contains(keyword);
 
@@ -44,6 +45,7 @@ public class SimCard
             UpgradedEffects = UpgradedEffects.Select(e => e.Clone()).ToList(),
             Keywords = new HashSet<string>(Keywords),
             UpgradedKeywords = new HashSet<string>(UpgradedKeywords),
+            UpgradedKeywordsOverrides = UpgradedKeywordsOverrides,
             Tags = new HashSet<string>(Tags)
         };
     }
