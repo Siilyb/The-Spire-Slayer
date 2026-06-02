@@ -1,1 +1,7 @@
 Slay The Spire 2/
+bin/
+obj/
+.vs/
+*.user
+*.suo
+[Rr]elease/

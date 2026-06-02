@@ -158,8 +158,16 @@ sts2_ai/                              # .NET 8.0 类库
 ├── CombatSimulator/
 │   ├── Enums.cs                      # CombatSide, CardType, CardRarity, TargetType, ValueProp
 │   ├── ValuePropExtensions.cs        # IsPoweredAttack(), IsPoweredCardOrMonsterMoveBlock()
-│   ├── IRandom.cs                    # IRandom + DefaultRandom + SeedRandom
+│   ├── IRandom.cs                    # GameRng（种子+Counter+Clone）
 │   ├── SimEngine.cs                  # 战斗引擎（回合循环 + PlayCard + 伤害/格挡流水线）
+│   │
+│   ├── Potions/                      # 药水系统（45 种）
+│   │   ├── SimPotion.cs              # 药水数据类
+│   │   └── PotionDb.cs              # 药水注册
+│   │
+│   ├── Relics/                       # 遗物系统
+│   │   ├── SimRelic.cs              # 遗物基类
+│   │   └── RelicDb.cs               # 遗物注册（含具体实现）
 │   │
 │   ├── State/
 │   │   ├── SimState.cs               # 战局状态
@@ -404,7 +412,304 @@ sts2_ai_mod/
 
 ---
 
-## 八、测试策略
+## 八、Phase 3：MCTS 战斗 AI
+
+### 8.1 目标
+
+给定当前战局（手牌、能量、敌人状态、牌堆），用蒙特卡洛搜索找出**胜率最高的出牌序列**。
+
+### 8.2 整体架构
+
+```
+MctsEngine (搜索引擎)
+├── MctsNode (树节点，存储状态/统计)
+│   ├── State: SimState（深拷贝的战局快照）
+│   ├── Visits: int
+│   ├── TotalScore: double
+│   ├── Children: List<MctsNode>
+│   ├── Parent: MctsNode?
+│   └── Action: (SimCard, SimCreature?)  // 打出哪张牌 + 目标谁
+│
+├── Selection (UCB1)
+├── Expansion (生成合法动作)
+├── Rollout (随机模拟)
+└── Backpropagation (反向传播)
+
+CombatAi : ICombatDecisionMaker
+├── ChooseActions(state) → MctsEngine.Search(state) → 最佳动作序列
+└── 参数: iterations=800, explorationC=1.414, timeLimit=5000ms
+```
+
+### 8.3 种子确定性（关键洞察）
+
+杀戮尖塔使用**种子确定的伪随机系统**——同一个种子下，流程完全确定。
+
+游戏源码 `Rng.cs` 结构：
+```csharp
+class Rng {
+    uint Seed;          // 基础种子
+    int Counter;        // 调用计数器（每次 Next* +1）
+    System.Random _random;  // 底层 PRNG
+
+    // 派生 RNG 流：seed' = seed + hash("MonsterAi")
+    new Rng(seed, "MonsterAi")  // 怪物 AI 专用流
+    new Rng(seed, "CombatTargets") // 目标选择专用流
+}
+```
+
+**关键理解**：
+- 同一个种子下，**抽牌顺序是确定可计算的**
+- 游戏内有**多个独立 RNG 流**（MonsterAi / CombatTargets / CombatCardGeneration...），每个由 `seed + hash("流名称")` 派生
+- 每个流的 `Counter` 追踪已调用次数，用于快进恢复
+
+**对 MCTS 的影响**：
+- **不是**不完全信息游戏——给定种子，一切可预测
+- **不需要** ISMCTS（打乱抽牌堆）
+- 应该使用**完美信息 MCTS** + 正确的种子 RNG
+- 需要跟踪 `Counter` 状态，因为不同决策分支消耗 RNG 次数不同
+
+### 8.4 RNG 可克隆性
+
+由于 MCTS 需要在不同分支中追踪 RNG 状态，`IRandom` 必须支持**克隆**：
+
+```csharp
+public class SeedRandom : IRandom {
+    public uint Seed { get; }
+    public int Counter { get; private set; }
+    private Random _rng;
+
+    public SeedRandom(int seed, int counter = 0) { ... }
+    public SeedRandom Clone() => new SeedRandom((int)Seed, Counter);
+
+    public int Next(int max) {
+        Counter++;
+        return _rng.Next(max);
+    }
+}
+```
+
+每次 `SimState.Clone()` 时，`State.Rng` 也必须克隆，确保分支间 RNG 状态独立。
+
+### 8.5 Selection（选择阶段）
+
+UCB1 公式：
+
+```
+UCB1 = winRate + C * sqrt(ln(parentVisits) / visits)
+
+- winRate = totalScore / visits（平均奖励）
+- C = explorationC = 1.414（√2，标准 UCB1 参数）
+- 选 UCB1 值最大的子节点
+- 未被扩展的节点优先级最高（visits == 0）
+```
+
+### 8.6 Expansion（扩展阶段）
+
+枚举所有**合法动作**（合法 = 能量足够 + 不是 Unplayable + 在手牌中）：
+
+```csharp
+List<(SimCard, SimCreature?)> GetLegalActions(SimState state):
+    foreach card in state.Hand:
+        if card.Unplayable: continue
+        cost = ApplyCardCostHooks(card.Cost)
+        if state.Energy < cost: continue
+        if card.TargetType == SingleEnemy:
+            foreach aliveEnemy: yield return (card, enemy)
+        else:
+            yield return (card, null)  // 自目标/AOE
+    yield return (null, null)  // EndTurn
+```
+
+**特殊处理**：
+- X 费卡（Whirlwind/Cascade）：作为单独动作，能量设为 `state.Energy`
+- 需要选择目标的卡（ExhaustFromHand 等）：简化版不做选择，用默认行为
+
+每步扩展一个动作（不是一次性扩展所有），使用**渐进扩展**。
+
+### 8.7 Rollout（随机模拟）
+
+随机策略（无搜索，纯随机）：
+
+```csharp
+double Rollout(SimState state):
+    while !state.IsCombatOver && turns < maxTurns:
+        actions = GetLegalActions(state)
+        if actions.Count == 1 && actions[0].card == null: // 只有 EndTurn
+            EndPlayerTurn()
+            EnemyTurn()
+            continue
+        (card, target) = actions[Rng.Next(actions.Count)]
+        PlayCard(card, target)
+    return Evaluate(state)
+```
+
+**Rollout 优化**：
+- 优先打攻击牌：80% 概率选攻击，20% 其他
+- 有格挡牌且 HP 低时优先格挡
+- 最大回合限制：20
+
+### 8.8 奖励函数（Evaluation）
+
+```csharp
+double Evaluate(SimState state):
+    if enemies all dead → +100 + (玩家HP / maxHP) * 50
+    if player dead → -100 - 回合数 * 5
+    else → (敌人总伤害潜力减少) + (玩家HP比例) - 回合数 * 0.1
+```
+
+### 8.9 动作选择
+
+从根节点选择最佳动作：
+
+```csharp
+(SimCard, SimCreature?) FindBestAction(MctsNode root):
+    // 策略 1：访问次数最多的子节点（稳健）
+    // 策略 2：胜率最高的子节点（激进）
+    // 混合：首先过滤 visits > threshold 的节点，再选 winRate 最高
+    candidates = root.Children.Where(c => c.Visits > 5)
+    if candidates.Any():
+        return candidates.OrderByDescending(c => c.WinRate).First().Action
+    return root.MostVisitedChild.Action
+```
+
+### 8.10 多卡牌序列生成
+
+杀尖每回合可以出多张牌，MCTS 需要生成完整的出牌序列：
+
+```csharp
+// CombatAi 调用方式：
+List<(SimCard, SimCreature?)> ChooseActions(SimState state):
+    actions = []
+    while true:
+        root = MctsEngine.Search(state)  // 搜索最佳动作
+        best = FindBestAction(root)
+        if best.card == null: break  // EndTurn
+        actions.Add(best)
+        // 模拟执行以更新 state 用于下一轮搜索
+        state = SimulateAction(state, best.card, best.target)
+        if state.IsCombatOver: break
+    return actions
+```
+
+### 8.11 性能考虑
+
+| 参数 | 推荐值 | 说明 |
+|------|--------|------|
+| iterations | 500-1000 | 每次动作搜索的迭代次数 |
+| explorationC | 1.414 | UCB1 探索系数 |
+| maxThinkTime | 5000ms | 最大思考时间 |
+| rolloutDepth | 20 | 随机模拟最大回合数 |
+| determinizePerturb | true | ISMCTS 抽牌堆打乱 |
+
+### 8.12 实现步骤
+
+| 步骤 | 内容 | 预计时间 |
+|------|------|---------|
+| 0 | 修复 `IRandom` → 游戏兼容的 `Rng`（种子+Counter+Clone） | 1 天 |
+| 1 | `MctsNode.cs` — 树节点数据结构 | 1 天 |
+| 2 | `MctsEngine.cs` — 完美信息 MCTS 核心循环 | 2 天 |
+| 3 | `RolloutPolicy.cs` — 启发式 Rollout | 1 天 |
+| 4 | `CombatAi.cs` — ICombatDecisionMaker 实现 | 1 天 |
+| 5 | 测试：确定种子下抽牌顺序可预测 | 0.5 天 |
+| 6 | 测试：简单战斗验证（无手牌 VS Chomper） | 1 天 |
+| 7 | 测试：单卡战斗（Strike VS Chomper） | 1 天 |
+| 8 | 测试：多卡战斗（Ironclad 初始卡组 VS 多个敌人） | 1 天 |
+| 9 | 性能优化（RNG 克隆优化、剪枝） | 1.5 天 |
+| **总计** | | **10 天** |
+
+### 8.13 关键技术挑战
+
+1. **SimState 深拷贝性能**：每次迭代需要克隆整个战局，必须优化 Clone 方法
+2. **RNG 状态克隆**：`SeedRandom` 必须可克隆且克隆后 Counter 独立
+3. **动作空间大小**：手牌数 × 敌人数量 可能很大（5手牌 × 3敌人 = 15+ 动作）
+4. **X 费卡处理**：Whirlwind 的 X 值 = 剩余能量，需要在 Expand 时计算
+5. **目标选择**：需要为每个可攻击的敌人创建一个动作节点
+
+---
+
+### 8.14 MCTS 动作扩展：需选牌的卡
+
+当前 MCTS 动作 `(card, target)` 只能表达"打某张牌到某个目标"。但很多卡需要额外选择（选手牌、选弃牌堆等）。
+
+#### 8.14.1 需扩展的动作类型
+
+| 类型 | 示例卡牌 | 当前行为 | 需扩展为 |
+|------|---------|---------|---------|
+| **选手牌升级** | Armaments(基础), UpgradeFromHand | ❌ 跳过 | `(card, target, chosenCard)` |
+| **选手牌消耗** | TrueGrit(升级), BurningPact, Brand, Purity | ❌ 跳过 | `(card, target, chosenCard)` |
+| **选手牌复制** | DualWield, DuplicateCardInHand | ❌ 跳过 | `(card, target, chosenCard)` |
+| **从弃牌堆选** | Headbutt, NeowsFury, SecretTechnique/Weapon | ❌ 跳过 | `(card, target, chosenFromDiscard)` |
+| **从抽牌堆选** | SeekerStrike | ❌ 跳过 | `(card, target, chosenFromDraw)` |
+| **从选项选** | Discovery, Splash | ❌ 跳过 | `(card, target, chosenOption)` |
+| **随机消耗** | Cinder, TrueGrit(基础) | ⚠ 随机实现 | 可用随机 |
+| **自动打出** | Havoc, Cascade, BeatDown, Catastrophe | ✅ 已实现 | — |
+| **条件抽牌** | Pillage | ✅ 已实现 | — |
+
+#### 8.14.2 架构扩展方案
+
+```csharp
+// 动作扩展为带选择的四元组
+public record ChoiceData {
+    public CardChoiceType Type;       // 选择类型
+    public SimCard? ChosenCard;       // 选中的手牌
+    public SimCard? ChosenFromPile;   // 从牌堆选的牌
+}
+
+// MctsNode 生成动作时, 对需选牌的卡展开子节点:
+// Armaments(基础) + 手牌有3张可升级 → 3个子节点 (每个选一张不同牌)
+// Armaments(升级) → 1个子节点 (升级全部, 不需选)
+```
+
+#### 8.14.3 实现优先级
+
+| 优先级 | 卡牌 | 原因 | 工作量 |
+|--------|------|------|--------|
+| P0 | Armaments | Ironclad 常用卡 | 小 |
+| P1 | TrueGrit(升级), BurningPact | 常用消耗手段 | 小 |
+| P2 | DualWield | 核心复制手段 | 小 |
+| P3 | Headbutt | 过牌手段 | 中 |
+| P4 | SecretTechnique/Weapon | 无色卡 | 中 |
+| P5 | Discovery, Splash | 无色卡, 需从选项选 | 大 |
+
+---
+
+### 8.15 药水系统
+
+药水在战斗中可使用，通常是一次性效果。需要扩展 SimEngine 以支持药水使用。
+
+```csharp
+class SimPotion {
+    string Id;           // "HEALTH_POTION", "ENERGY_POTION"...
+    string Name;
+    PotionRarity Rarity; // Common, Uncommon, Rare
+    List<IEffect> Effects;  // 与卡牌共享 Effect 系统
+}
+
+class SimState {
+    List<SimPotion> Potions;  // 玩家当前拥有的药水
+}
+```
+
+药水使用流程：MCTS 将药水使用作为可选动作 → 执行 Effect → 从列表移除。
+
+### 8.16 遗物系统
+
+遗物提供被动加成，通过 Power/Hook 系统实现。
+
+```csharp
+class SimRelic {
+    string Id;           // "BURNING_BLOOD", "STRIKE_DUMMY"...
+    string Name;
+    // 遗物通过 Hook 系统影响战斗: 战斗开始/回合开始/伤害修改等
+    void OnCombatStart(SimState state);
+    decimal ModifyDamage(...);
+    // 大部分遗物可以用已有的 Power 模拟
+}
+```
+
+---
+
+## 九、测试策略
 
 | 测试类型 | 覆盖范围 |
 |---------|---------|
@@ -414,10 +719,11 @@ sts2_ai_mod/
 | 卡牌测试 | 每张卡打出后 Effect 序列结果 |
 | 怪物测试 | 每个怪物 5-10 回合行为序列 |
 | 整合测试 | 真实卡组 vs 真实敌人 |
+| MCTS 测试 | 简单战局下的搜索正确性 |
 
 ---
 
-## 九、文件组织规范（防损坏）
+## 十、文件组织规范（防损坏）
 
 1. **每张卡一个文件**
 2. **每个怪物一个文件**

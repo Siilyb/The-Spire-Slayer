@@ -17,6 +17,7 @@ public class EnemyTurnPlan
     public int Hits { get; set; } = 1;
     public int BuffAmount { get; set; }
     public int DebuffAmount { get; set; }
+    public int HealAmount { get; set; }
     public string? StatusCardId { get; set; }
     public int StatusCardCount { get; set; }
     public ValueProp DamageProps { get; set; } = ValueProp.Move;

@@ -10,12 +10,12 @@
 using System;
 using System.Reflection;
 
-[assembly: System.Reflection.AssemblyCompanyAttribute("sts2_ai")]
+[assembly: System.Reflection.AssemblyCompanyAttribute("sts2_ai_core")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+bf0f0b047b7b5a0f2d7e7fb4373a2578a7232ac7")]
-[assembly: System.Reflection.AssemblyProductAttribute("sts2_ai")]
-[assembly: System.Reflection.AssemblyTitleAttribute("sts2_ai")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+90e7b33b70a04095c7223d2d93a9d0693287e7ea")]
+[assembly: System.Reflection.AssemblyProductAttribute("sts2_ai_core")]
+[assembly: System.Reflection.AssemblyTitleAttribute("sts2_ai_core")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
 
 // 由 MSBuild WriteCodeFragment 类生成。

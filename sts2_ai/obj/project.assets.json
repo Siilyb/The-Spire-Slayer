@@ -15,7 +15,7 @@
     "version": "1.0.0",
     "restore": {
       "projectUniqueName": "C:\\Users\\GoodName\\The Spire Slayer\\sts2_ai\\sts2_ai.csproj",
-      "projectName": "sts2_ai",
+      "projectName": "sts2_ai_core",
       "projectPath": "C:\\Users\\GoodName\\The Spire Slayer\\sts2_ai\\sts2_ai.csproj",
       "packagesPath": "C:\\Users\\GoodName\\.nuget\\packages\\",
       "outputPath": "C:\\Users\\GoodName\\The Spire Slayer\\sts2_ai\\obj\\",

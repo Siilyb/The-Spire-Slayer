@@ -432,14 +432,14 @@
           "build/net8.0/xunit.runner.visualstudio.props": {}
         }
       },
-      "sts2_ai/1.0.0": {
+      "sts2_ai_core/1.0.0": {
         "type": "project",
         "framework": ".NETCoreApp,Version=v8.0",
         "compile": {
-          "bin/placeholder/sts2_ai.dll": {}
+          "bin/placeholder/sts2_ai_core.dll": {}
         },
         "runtime": {
-          "bin/placeholder/sts2_ai.dll": {}
+          "bin/placeholder/sts2_ai_core.dll": {}
         }
       }
     }
@@ -1012,7 +1012,7 @@
         "xunit.runner.visualstudio.nuspec"
       ]
     },
-    "sts2_ai/1.0.0": {
+    "sts2_ai_core/1.0.0": {
       "type": "project",
       "path": "../sts2_ai/sts2_ai.csproj",
       "msbuildProject": "../sts2_ai/sts2_ai.csproj"
@@ -1022,7 +1022,7 @@
     "net8.0": [
       "Microsoft.NET.Test.Sdk >= 17.14.1",
       "coverlet.collector >= 6.0.4",
-      "sts2_ai >= 1.0.0",
+      "sts2_ai_core >= 1.0.0",
       "xunit >= 2.9.3",
       "xunit.runner.visualstudio >= 3.1.4"
     ]

@@ -1,51 +1,72 @@
-# Mod 集成计划
+# Mod 集成计划（最终版）
 
-## 目标
+> Mod 只做**推荐**，不做自动出牌。
+> 玩家手动出牌，Mod 在 CMD 窗口中显示 MCTS 的推荐和建议。
+> 玩家可以看推荐来决定打哪张牌、打哪个敌人。
 
-将 MCTS AI 接入真实游戏，替换 AutoSlay 的随机行为。
+---
 
 ## 架构
 
 ```
-sts2_ai_mod/                 # Mod 项目 (net9.0)
-├── Sts2AiMod.cs             # Mod 入口 [ModInitializer] + Harmony 补丁
-├── StateConverter.cs         # 游戏 CombatState → SimState 转换
-├── CardMapper.cs             # 游戏 CardModel ID → SimCard ID 映射
-├── mod.json                  # Mod 清单文件
-└── sts2_ai_mod.csproj       # 项目文件（引用 sts2.dll + 0Harmony.dll + sts2_ai）
+游戏进程
+├── sts2.dll
+├── sts2_ai_mod.dll          # Mod DLL (Harmony 补丁)
+│   ├── Sts2AiMod.cs         # Mod 入口 + Harmony 补丁
+│   ├── StateConverter.cs    # 游戏 CombatState → SimState
+│   ├── CardMapper.cs        # 游戏 CardModel ID → SimCard
+│   └── ConsoleDisplay.cs    # CMD 窗口 + 实时显示
+└── sts2_ai.dll              # AI 引擎库（被 mod 引用）
+```
 
-部署到: C:\Program Files (x86)\Steam\steamapps\common\Slay the Spire 2\mods\sts2_ai\
-├── mod.json
-├── sts2_ai_mod.dll           # Mod DLL
-└── sts2_ai.dll               # 我们的 AI 库
+## Mod 工作流程
+
+```
+[玩家进入战斗]
+  → CombatState.AfterPlayerTurnStart 事件
+    → StateConverter 将游戏状态转为 SimState
+    → MCTS 搜索最佳出牌
+    → CMD 窗口显示:
+        - 玩家/敌人状态
+        - 手牌列表
+        - AI 推荐: 打击 → 第一只史莱姆
+        - AI 推荐: 痛击 → 第二只史莱姆
+    → 玩家自行决定是否按推荐打牌
+
+[玩家打出任意牌后]
+  → CombatState.AfterCardPlayed 事件
+    → 重新转换状态
+    → 重新运行 MCTS（更新推荐）
+    → CMD 窗口更新显示
 ```
 
 ## 实施步骤
 
-### Step 1: 创建 sts2_ai_mod 项目
-- .NET 9.0 类库
-- 引用 `data_sts2_windows_x86_64/sts2.dll` + `0Harmony.dll` + `GodotSharp.dll`
-- 引用 sts2_ai 项目
+| 步骤 | 内容 | 预计时间 |
+|------|------|---------|
+| 1 | 创建 mod 项目 + 引用游戏 DLL | 已完成 ✅ |
+| 2 | CardMapper（225 张卡 ID 映射） | 已完成 ✅ |
+| 3 | StateConverter（CombatState→SimState） | 已完成 ✅ |
+| 4 | ConsoleDisplay（AllocConsole + 显示） | 已完成 ✅ |
+| 5 | Sts2AiMod（Harmony 补丁 + 事件挂钩） | 已完成 ✅ |
+| 6 | 部署到游戏 mods 目录 | 待完成 |
+| 7 | 端到端测试 | 待完成 |
 
-### Step 2: StateConverter
-将游戏 `CombatState` → `SimState`：
-- 遍历手牌 → 查找 CardDb → 构建 SimCard 列表
-- 复制玩家 HP/Block/能量/Powers
-- 复制敌人 HP/Block/Powers
-- 复制抽牌堆/弃牌堆
+## 部署
 
-### Step 3: Sts2AiMod
-- [ModInitializer] → Harmony Patch
-- Patch `AutoSlay.CombatRoomHandler.HandleAsync`
-- 当战斗开始时，用 MCTS 替代随机出牌
+编译后复制到游戏 mods 目录：
+```
+C:\Program Files (x86)\Steam\steamapps\common\Slay the Spire 2\mods\sts2_ai\
+├── mod.json
+├── sts2_ai_mod.dll         # Mod 主程序
+└── sts2_ai.dll             # AI 引擎库
+```
 
-### Step 4: 部署
-- 编译 mod + 复制 sts2_ai.dll
-- 创建 mod.json
-- 放入游戏 mods 目录
+以 `--autoslay` 或 `-w` 模式启动游戏：
+```
+Slay the Spire 2.exe --autoslay
+或
+Steam 启动选项: --autoslay
+```
 
-## 挑战
-1. CardModel → SimCard 映射（需要知道每张卡的 ID 对应关系）
-2. PowerModel → SimPower 映射（游戏 Power 类 vs 我们的 SimPower 类）
-3. Harmony 补丁的正确性
-4. 游戏必须在 `--autoslay` 模式下启动才能启用 AI
+游戏启动时會看到弹出的 CMD 窗口，进入战斗后自动显示 MCTS 推荐。

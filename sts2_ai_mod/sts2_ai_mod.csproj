@@ -1,0 +1,24 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AssemblyName>sts2_ai</AssemblyName>
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\sts2_ai\sts2_ai.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="sts2">
+      <HintPath>..\Slay The Spire 2\.godot\mono\temp\bin\Debug\sts2.dll</HintPath>
+    </Reference>
+    <Reference Include="0Harmony">
+      <HintPath>..\Slay The Spire 2\_mono_referenced_assemblies\0Harmony.dll</HintPath>
+    </Reference>
+    <Reference Include="GodotSharp">
+      <HintPath>..\Slay The Spire 2\.godot\mono\temp\bin\Debug\GodotSharp.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+</Project>

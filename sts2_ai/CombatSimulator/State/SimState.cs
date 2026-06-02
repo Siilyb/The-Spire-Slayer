@@ -13,7 +13,7 @@ public class SimState
     public int TurnNumber { get; set; }
     public int RoundNumber { get; set; }
     public CombatSide CurrentSide { get; set; } = CombatSide.Player;
-    public IRandom Rng { get; set; } = new DefaultRandom();
+    public IRandom Rng { get; set; } = new GameRng();
 
     public bool IsCombatOver => !Players.Any(p => p.IsAlive) || !Enemies.Any(e => e.IsAlive);
 
@@ -32,7 +32,7 @@ public class SimState
             TurnNumber = TurnNumber,
             RoundNumber = RoundNumber,
             CurrentSide = CurrentSide,
-            Rng = Rng
+            Rng = Rng.Clone()
         };
     }
 }

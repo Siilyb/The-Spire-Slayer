@@ -85,8 +85,6 @@ C:\Users\GoodName\The Spire Slayer\sts2_ai_tests\bin\Debug\net8.0\zh-Hans\Micros
 C:\Users\GoodName\The Spire Slayer\sts2_ai_tests\bin\Debug\net8.0\zh-Hant\Microsoft.TestPlatform.CommunicationUtilities.resources.dll
 C:\Users\GoodName\The Spire Slayer\sts2_ai_tests\bin\Debug\net8.0\zh-Hant\Microsoft.TestPlatform.CrossPlatEngine.resources.dll
 C:\Users\GoodName\The Spire Slayer\sts2_ai_tests\bin\Debug\net8.0\zh-Hant\Microsoft.VisualStudio.TestPlatform.Common.resources.dll
-C:\Users\GoodName\The Spire Slayer\sts2_ai_tests\bin\Debug\net8.0\sts2_ai.dll
-C:\Users\GoodName\The Spire Slayer\sts2_ai_tests\bin\Debug\net8.0\sts2_ai.pdb
 C:\Users\GoodName\The Spire Slayer\sts2_ai_tests\obj\Debug\net8.0\sts2_ai_tests.csproj.AssemblyReference.cache
 C:\Users\GoodName\The Spire Slayer\sts2_ai_tests\obj\Debug\net8.0\sts2_ai_tests.GeneratedMSBuildEditorConfig.editorconfig
 C:\Users\GoodName\The Spire Slayer\sts2_ai_tests\obj\Debug\net8.0\sts2_ai_tests.AssemblyInfoInputs.cache
@@ -99,3 +97,5 @@ C:\Users\GoodName\The Spire Slayer\sts2_ai_tests\obj\Debug\net8.0\sts2_ai_tests.
 C:\Users\GoodName\The Spire Slayer\sts2_ai_tests\obj\Debug\net8.0\sts2_ai_tests.genruntimeconfig.cache
 C:\Users\GoodName\The Spire Slayer\sts2_ai_tests\obj\Debug\net8.0\ref\sts2_ai_tests.dll
 C:\Users\GoodName\The Spire Slayer\sts2_ai_tests\obj\Debug\net8.0\sts2_ai_tests.sourcelink.json
+C:\Users\GoodName\The Spire Slayer\sts2_ai_tests\bin\Debug\net8.0\sts2_ai_core.dll
+C:\Users\GoodName\The Spire Slayer\sts2_ai_tests\bin\Debug\net8.0\sts2_ai_core.pdb

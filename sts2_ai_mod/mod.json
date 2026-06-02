@@ -1,0 +1,9 @@
+{
+  "id": "sts2_ai",
+  "name": "STS2 AI",
+  "description": "MCTS-based AI recommendations for combat. Shows recommended card plays in a console window.",
+  "version": "0.1.0",
+  "author": "The Spire Slayer",
+  "has_dll": true,
+  "dependencies": []
+}

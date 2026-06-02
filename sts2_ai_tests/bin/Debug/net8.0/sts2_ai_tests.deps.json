@@ -9,8 +9,9 @@
       "sts2_ai_tests/1.0.0": {
         "dependencies": {
           "Microsoft.NET.Test.Sdk": "17.14.1",
-          "sts2_ai": "1.0.0",
-          "xunit": "2.9.3"
+          "sts2_ai_core": "1.0.0",
+          "xunit": "2.9.3",
+          "sts2_ai_core.Reference": "1.0.0.0"
         },
         "runtime": {
           "sts2_ai_tests.dll": {}
@@ -331,9 +332,16 @@
           }
         }
       },
-      "sts2_ai/1.0.0": {
+      "sts2_ai_core/1.0.0": {
         "runtime": {
-          "sts2_ai.dll": {
+          "sts2_ai_core.dll": {
+            "fileVersion": "0.0.0.0"
+          }
+        }
+      },
+      "sts2_ai_core.Reference/1.0.0.0": {
+        "runtime": {
+          "sts2_ai_core.dll": {
             "assemblyVersion": "1.0.0.0",
             "fileVersion": "1.0.0.0"
           }
@@ -424,8 +432,13 @@
       "path": "xunit.extensibility.execution/2.9.3",
       "hashPath": "xunit.extensibility.execution.2.9.3.nupkg.sha512"
     },
-    "sts2_ai/1.0.0": {
+    "sts2_ai_core/1.0.0": {
       "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "sts2_ai_core.Reference/1.0.0.0": {
+      "type": "reference",
       "serviceable": false,
       "sha512": ""
     }

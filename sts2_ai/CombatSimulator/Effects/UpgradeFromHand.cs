@@ -9,6 +9,13 @@ public class UpgradeFromHand : IEffect
 
     public void Execute(SimEngine engine, SimCreature source, SimCreature? target)
     {
+        // If MCTS pre-chose a card, use it
+        if (engine.CurrentChoiceCard != null)
+        {
+            engine.CurrentChoiceCard.IsUpgraded = true;
+            return;
+        }
+
         var candidates = Filter != null
             ? engine.State.Hand.Cards.Where(Filter).ToList()
             : engine.State.Hand.Cards.ToList();

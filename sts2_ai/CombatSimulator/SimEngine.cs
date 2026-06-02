@@ -5,16 +5,24 @@ using Sts2Ai.Enemies;
 
 namespace Sts2Ai.CombatSimulator;
 
+public class AiAction
+{
+    public SimCard Card { get; set; } = null!;
+    public SimCreature? Target { get; set; }
+    public SimCard? ChoiceCard { get; set; } // For Armaments etc.
+}
+
 public interface ICombatDecisionMaker
 {
-    List<SimCard> ChooseCardsToPlay(SimState state);
+    List<AiAction> ChooseActions(SimState state);
 }
 
 public class SimEngine
 {
-    public SimState State { get; private set; }
+    public SimState State { get; set; }
     public ICombatDecisionMaker? PlayerAi { get; set; }
     public SimCard? CurrentPlayingCard { get; set; }
+    public SimCard? CurrentChoiceCard { get; set; }  // For cards that choose from hand (Armaments etc.)
 
     // Per-turn tracking
     public int CardsExhaustedThisTurn { get; set; }
@@ -27,12 +35,16 @@ public class SimEngine
         PlayerAi = playerAi;
     }
 
-    public CombatResult RunFullCombat(int maxTurns = 100)
+    public CombatResult RunFullCombat(int maxTurns = 100, ICombatDecisionMaker? mctsAi = null, Action<SimState, string>? onCardPlayed = null)
     {
         foreach (var enemy in State.Enemies)
         {
-            var ai = EnemyDb.Get(enemy.Name.ToUpperInvariant());
-            ai?.OnCombatStart(enemy);
+            var ai = EnemyDb.Create(enemy.Name.ToUpperInvariant());
+            if (ai != null)
+            {
+                enemy.CustomState["__ai"] = ai;
+                ai.OnCombatStart(enemy);
+            }
         }
 
         for (int turn = 0; turn < maxTurns; turn++)
@@ -48,13 +60,22 @@ public class SimEngine
             PlayerDrawCards(5);
             CheckEtherealOnDraw();
 
-            if (PlayerAi != null)
+            var ai = mctsAi ?? PlayerAi;
+            if (ai != null)
             {
-                var cardsToPlay = PlayerAi.ChooseCardsToPlay(State);
-                foreach (var card in cardsToPlay)
+                var actions = ai.ChooseActions(State);
+                foreach (var act in actions)
                 {
-                    if (!State.Hand.Cards.Contains(card)) continue;
-                    PlayCard(card);
+                    var realCard = State.Hand.Cards.FirstOrDefault(c => c.Id == act.Card.Id);
+                    if (realCard == null) continue;
+                    SimCreature? realTarget = null;
+                    if (act.Target != null)
+                        realTarget = State.Enemies.FirstOrDefault(e => e.Name == act.Target.Name);
+                    if (act.ChoiceCard != null)
+                        CurrentChoiceCard = State.Hand.Cards.FirstOrDefault(c => c.Id == act.ChoiceCard.Id);
+                    PlayCard(realCard, realTarget);
+                    CurrentChoiceCard = null;
+                    onCardPlayed?.Invoke(State, $"打出: {realCard.Name}");
                     if (State.IsCombatOver) break;
                 }
             }
@@ -83,7 +104,7 @@ public class SimEngine
         };
     }
 
-    private void BeginPlayerTurn()
+    public void BeginPlayerTurn()
     {
         CardsExhaustedThisTurn = 0;
         UnblockedDamageReceivedThisTurn = 0;
@@ -128,7 +149,7 @@ public class SimEngine
         State.DrawPile.Shuffle(State.Rng);
     }
 
-    private void CheckEtherealOnDraw()
+    public void CheckEtherealOnDraw()
     {
         var toExhaust = State.Hand.Cards
             .Where(c => c.HasKeyword("Ethereal") && c.HasKeyword("Unplayable"))
@@ -140,14 +161,14 @@ public class SimEngine
         }
     }
 
-    public void PlayCard(SimCard card)
+    public void PlayCard(SimCard card, SimCreature? forcedTarget = null)
     {
         if (!State.Hand.Cards.Contains(card)) return;
-        ExecuteCard(card);
+        ExecuteCard(card, forcedTarget);
     }
 
     /// Play a card that may not be in hand (for HowlFromBeyond auto-replay)
-    public void ExecuteCard(SimCard card)
+    public void ExecuteCard(SimCard card, SimCreature? forcedTarget = null)
     {
         if (card.HasKeyword("Unplayable")) return;
 
@@ -157,7 +178,7 @@ public class SimEngine
         State.Energy -= modifiedCost;
 
         var source = State.Players[0];
-        var target = SelectTarget(card);
+        var target = forcedTarget ?? SelectTarget(card);
 
         foreach (var power in source.Powers.ToList())
             power.BeforeCardPlayed(source, card);
@@ -166,9 +187,10 @@ public class SimEngine
         foreach (var effect in card.CurrentEffects)
         {
             effect.Execute(this, source, target);
-            if (State.IsCombatOver) { CurrentPlayingCard = null; return; }
+            if (State.IsCombatOver) { CurrentPlayingCard = null; CurrentChoiceCard = null; return; }
         }
         CurrentPlayingCard = null;
+        CurrentChoiceCard = null;
 
         foreach (var power in source.Powers.ToList())
             power.AfterCardPlayed(source, card);
@@ -189,7 +211,11 @@ public class SimEngine
         if (card.DefaultTargetType == TargetType.Self || card.DefaultTargetType == TargetType.None)
             return State.Players.FirstOrDefault();
         if (card.DefaultTargetType == TargetType.SingleEnemy)
-            return State.Enemies.FirstOrDefault(e => e.IsAlive);
+        {
+            var alive = State.Enemies.Where(e => e.IsAlive).ToList();
+            if (alive.Count == 0) return null;
+            return alive[State.Rng.Next(alive.Count)]; // MCTS 后续会替换为智能选择
+        }
         return null;
     }
 
@@ -239,7 +265,7 @@ public class SimEngine
         }
     }
 
-    private void EndPlayerTurn()
+    public void EndPlayerTurn()
     {
         var participants = State.Players.Where(p => p.IsAlive).ToList();
 
@@ -263,10 +289,20 @@ public class SimEngine
                 player.Block = 0;
         }
 
+        // Ethereal: exhaust cards with Ethereal keyword before discarding
+        var etherealCards = State.Hand.Cards.Where(c => c.HasKeyword("Ethereal")).ToList();
+        foreach (var card in etherealCards)
+        {
+            State.Hand.Remove(card);
+            State.ExhaustPile.Add(card);
+            foreach (var power in State.Players.SelectMany(p => p.Powers))
+                power.AfterCardExhausted(State.Players[0], card);
+        }
+
         State.Hand.MoveTo(State.DiscardPile);
     }
 
-    private void BeginEnemyTurn()
+    public void BeginEnemyTurn()
     {
         var participants = State.Enemies.Where(e => e.IsAlive).ToList() as IReadOnlyList<SimCreature>;
         foreach (var enemy in State.Enemies.Where(e => e.IsAlive))
@@ -281,10 +317,13 @@ public class SimEngine
         var player = State.Players.FirstOrDefault(p => p.IsAlive);
         if (player == null) return;
 
-        var ai = EnemyDb.Get(enemy.Name.ToUpperInvariant());
+        var ai = enemy.CustomState.TryGetValue("__ai", out var stored) ? stored as IEnemyAi : null;
         if (ai == null) return;
 
         var plan = ai.PlanNextTurn(State, enemy);
+
+        if (plan.Intent == IntentType.Heal && plan.HealAmount > 0)
+            enemy.Heal(plan.HealAmount);
 
         if (plan.Intent == IntentType.Attack || plan.Intent == IntentType.DeathBlow)
         {
@@ -315,24 +354,34 @@ public class SimEngine
 
         if (plan.StatusCardCount > 0 && !string.IsNullOrEmpty(plan.StatusCardId))
         {
+            var kw = new HashSet<string> { "Unplayable" };
+            if (plan.StatusCardId == "DAZED" || plan.StatusCardId == "VOID")
+                kw.Add("Ethereal");
+            if (plan.StatusCardId == "SLIMED" || plan.StatusCardId == "DEBRIS" || plan.StatusCardId == "SPORE_MIND")
+                kw = new HashSet<string> { "Exhaust" };
+            if (plan.StatusCardId == "BURN" || plan.StatusCardId == "INFECTION" || plan.StatusCardId == "WITHER")
+                kw = new HashSet<string> { "Unplayable" };
+            if (plan.StatusCardId == "TOXIC")
+                kw = new HashSet<string> { "Exhaust" };
+
             for (int i = 0; i < plan.StatusCardCount; i++)
             {
                 var statusCard = new SimCard
                 {
                     Id = plan.StatusCardId,
                     Name = plan.StatusCardId,
-                    Cost = -1,
+                    Cost = plan.StatusCardId == "SLIMED" || plan.StatusCardId == "BECKON" || plan.StatusCardId == "DEBRIS" ? 1 : -1,
                     Type = CardType.Status,
                     Rarity = CardRarity.Status,
                     DefaultTargetType = TargetType.None,
-                    Keywords = new HashSet<string> { "Unplayable" }
+                    Keywords = new HashSet<string>(kw)
                 };
                 State.DiscardPile.Add(statusCard);
             }
         }
     }
 
-    private void EndEnemyTurn()
+    public void EndEnemyTurn()
     {
         var participants = State.Enemies.Where(e => e.IsAlive).ToList();
 
@@ -476,6 +525,9 @@ public class SimEngine
     }
 
     // ============ 能量（含钩子） ============
+
+    /// Direct enemy turn execution for MCTS rollout
+    public void EnemyTakeTurnDirect(SimCreature enemy) => EnemyTakeTurn(enemy);
 
     public int ApplyEnergyGain(int amount)
     {
